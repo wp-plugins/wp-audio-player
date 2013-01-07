@@ -3,7 +3,7 @@
 Plugin Name: WP Audio Player
 Plugin URI: http://tommcfarlin.com/wp-audio-player/
 Description: An easy way to embed an audio file in your posts using the responsive and touch-friendly audio player by Codrops.
-Version: 1.0
+Version: 1.1
 Author: Tom McFarlin
 Author URI: http://tommcfarlin.com/
 Author Email: tom@tommcfarlin.com
@@ -172,14 +172,19 @@ class WP_Audio_Player {
 	 */
 	public function display_audio_content( $content ) {
 		
-		// Append the audio URL ot the content, if it's defined.
-		$audio_url = get_post_meta( get_the_ID(), 'wp_audio_url', true );
-		if( 0 != strlen( $audio_url ) ) {
-			
-			$audio_html = '<audio src="' . $audio_url . '" preload="auto" controls></audio>';
-			$content .= $audio_html;
-			
-		} // end if 
+		// We really only want to do this if we're on the single post page
+		if( is_single() ) {
+		
+			// Append the audio URL ot the content, if it's defined.
+			$audio_url = get_post_meta( get_the_ID(), 'wp_audio_url', true );
+			if( 0 != strlen( $audio_url ) ) {
+				
+				$audio_html = '<audio src="' . $audio_url . '" preload="auto" controls></audio>';
+				$content .= $audio_html;
+				
+			} // end if 
+		
+		} // end if
 		
 		return $content;
 		
