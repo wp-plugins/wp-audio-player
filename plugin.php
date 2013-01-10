@@ -3,7 +3,7 @@
 Plugin Name: WP Audio Player
 Plugin URI: http://tommcfarlin.com/wp-audio-player/
 Description: An easy way to embed an audio file in your posts using the responsive and touch-friendly audio player by Codrops.
-Version: 1.1
+Version: 1.2
 Author: Tom McFarlin
 Author URI: http://tommcfarlin.com/
 Author Email: tom@tommcfarlin.com
@@ -84,21 +84,28 @@ class WP_Audio_Player {
 	
 	/*--------------------------------------------*
 	 * Core Functions
-	 *---------------------------------------------*/
+	 *--------------------------------------------*/
 	
 	/**
 	 * Adds a meta box to the post edit screen.
 	 */
 	public function display_audio_url() {
 	
-		add_meta_box(
-			'wp_audio_url',
-			__( 'Audio', 'wp-audio-player' ),
-			array( $this, 'display_audio_url_input' ),
-			'post',
-			'side',
-			'core'
+		// First, get all of the post types in the theme
+		$args = array(
+			'public'				=>	true,
+			'publicly_queryable'	=>	true,
+			'exclude_from_search'	=>	false,
+			'show_in_nav_menus'		=>	true
 		);
+		
+		// Next, build up the string used to represent the post types
+		foreach( get_post_types( $args ) as $post_type ) {
+			$this->add_meta_box( $post_type );
+		} // end foreach
+		
+		// And finally add support for pages
+		$this->add_meta_box( 'page' );
 		
 	} // end display_audio_url
 	
@@ -140,7 +147,7 @@ class WP_Audio_Player {
 			} // end if
 	
 			// Make sure the user has permissions to post
-			if( 'post' == $_POST['post_type']) {
+			if( 'post' == $_POST['post_type'] ) {
 				if( ! current_user_can( 'edit_post', $post_id ) ) {
 					return;
 				} // end if
@@ -189,6 +196,28 @@ class WP_Audio_Player {
 		return $content;
 		
 	} // end display_audio_content
+	
+	/*--------------------------------------------*
+	 * Private Functions
+	 *--------------------------------------------*/
+	
+	/**
+	 * Adds a 'Feature Audio' meta box to the specified post type.
+	 *
+	 * @param	string	$post_type	The post type to which we're adding the meta box.
+	 */
+	private function add_meta_box( $post_type ) {
+		
+		add_meta_box(
+			'wp_audio_url',
+			__( 'Featured Audio', 'wp-audio-player' ),
+			array( $this, 'display_audio_url_input' ),
+			$post_type,
+			'side',
+			'low'
+		);
+		
+	} // end add_meta_box
   
 } // end class
 
