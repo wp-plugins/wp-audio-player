@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: WP Audo Player 1.0\n"
-"POT-Creation-Date: 2013-01-05 12:00-0500\n"
-"PO-Revision-Date: 2013-01-05 12:00-0500\n"
+"Project-Id-Version: WP Audio Player 1.0\n"
+"POT-Creation-Date: 2013-01-16 08:30-0500\n"
+"PO-Revision-Date: 2013-01-16 08:30-0500\n"
 "Last-Translator: Tom McFarlin <tom@tommcfarlin.com>\n"
 "Language-Team: Tom McFarlin <tom@tommcfarlin.com>\n"
 "Language: en_US\n"
@@ -15,10 +15,10 @@ msgstr ""
 "X-Poedit-SourceCharset: UTF-8\n"
 "X-Poedit-SearchPath-0: ..\n"
 
-#: ../plugin.php:98
-msgid "Audio"
+#: ../plugin.php:125
+msgid "Place the URL to your audio file here."
 msgstr ""
 
-#: ../plugin.php:119
-msgid "Place the URL to your audio file here."
+#: ../plugin.php:216
+msgid "Featured Audio"
 msgstr ""
