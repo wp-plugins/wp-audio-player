@@ -3,7 +3,7 @@
 Plugin Name: WP Audio Player
 Plugin URI: http://tommcfarlin.com/wp-audio-player/
 Description: An easy way to embed an audio file in your posts using the responsive and touch-friendly audio player by Codrops.
-Version: 1.3
+Version: 1.4
 Author: Tom McFarlin
 Author URI: http://tommcfarlin.com/
 Author Email: tom@tommcfarlin.com
@@ -26,7 +26,17 @@ License:
 
 */
 
+if( ! defined( 'WP_AUDIO_PLAYER_VERSION' ) ) {
+	define( 'WP_AUDIO_PLAYER_VERSION', '1.4' );
+} // end if
+
 class WP_Audio_Player {
+
+	/*--------------------------------------------*
+	 * Attributes
+	 *--------------------------------------------*/
+
+	 private $audio_player_nonce = 'wp_audio_player_nonce';
 
 	/*--------------------------------------------*
 	 * Constructor
@@ -41,6 +51,7 @@ class WP_Audio_Player {
 		add_action( 'init', array( $this, 'plugin_textdomain' ) );
 
 		// Register site styles and scripts
+		add_action( 'admin_enqueue_scripts', array( $this, 'register_admin_scripts' ) );
 		add_action( 'admin_print_styles', array( $this, 'register_admin_styles' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'register_plugin_styles' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'register_plugin_scripts' ) );
@@ -65,8 +76,18 @@ class WP_Audio_Player {
 	 * Registers and enqueues plugin-specific styles.
 	 */
 	public function register_plugin_styles() {
+		
 		wp_enqueue_style( 'wp-audio-player', plugins_url( 'wp-audio-player/css/audioplayer.css' ) );
+		wp_enqueue_style( 'wp-audio-player-theme', plugins_url( 'wp-audio-player/css/plugin.css' ) );
+		
 	} // end register_plugin_styles
+	
+	/**
+	 * Registers and enqueues admin-specific scripts.
+	 */
+	public function register_admin_scripts() {
+		wp_enqueue_script( 'wp-audio-player-meta', plugins_url( 'wp-audio-player/js/admin.min.js' ) );
+	} // end register_admin_scripts
 
 	/**
 	 * Registers and enqueues admin-specific styles.
@@ -80,8 +101,8 @@ class WP_Audio_Player {
 	 */
 	public function register_plugin_scripts() {
 	
-		wp_enqueue_script( 'wp-audio-player', plugins_url( 'wp-audio-player/js/audioplayer.min.js' ) );
-		wp_enqueue_script( 'wp-audio-player-plugin', plugins_url( 'wp-audio-player/js/plugin.min.js' ) );
+		wp_enqueue_script( 'wp-audio-player', plugins_url( 'wp-audio-player/js/audioplayer.min.js' ), array( 'jquery' ), WP_AUDIO_PLAYER_VERSION, false );
+		wp_enqueue_script( 'wp-audio-player-plugin', plugins_url( 'wp-audio-player/js/plugin.min.js' ), array( 'wp-audio-player' ), WP_AUDIO_PLAYER_VERSION, false );
 		
 	} // end register_plugin_scripts
 
@@ -119,12 +140,38 @@ class WP_Audio_Player {
 	 */
 	public function display_audio_url_input( $post ) {
 
-		wp_nonce_field( plugin_basename( __FILE__ ), 'wp_audio_player_nonce' );
+		wp_nonce_field( plugin_basename( __FILE__ ), $this->audio_player_nonce );
 
-		$html  = '<span class="description">';
+		$html  = '<p class="description">';
 			$html .= __( 'Place the URL to your audio file here.', 'wp-audio-player' );
-		$html .= '</span>';
+		$html .= '</p>';
 		$html .= '<input type="text" id="wp_audio_url" name="wp_audio_url" value="' . esc_url( get_post_meta( $post->ID, 'wp_audio_url', true ) ) . '" />';
+		
+		// If there has MP3's in the Media Library, give them that option.
+		if( $this->has_mp3_files() ) {
+		
+			// Grab the query for the MP3 files
+			$media = $this->get_mp3_files();
+		
+			$html  .= '<p class="description">';
+				$html .= __( 'Or select an MP3 from your media library.', 'wp-audio-player' );
+			$html .= '</p>';
+			$html .= '<select id="wp-audio-player-media" name="wp-audio-player-media" multiple>';
+				
+				// Build up the list of MP#3 files
+				while( $media->have_posts() ) {
+				
+					$media->the_post();
+					
+					global $post;
+					$html .= '<option value="' . $post->guid . '" ' . selected( $post->guid, esc_url( get_post_meta( $post->ID, 'wp_audio_url', true ) ), false ) . '>' . get_the_title() . '</option>';
+					
+				} // end while
+				wp_reset_postdata();
+				
+			$html .= '</select><!-- /#wp-audio-player-media -->';
+		
+		} // end if 
 
 		echo $html;
 
@@ -137,25 +184,9 @@ class WP_Audio_Player {
 	 */
 	public function save_audio_url( $post_id ) {
 
-		if( isset( $_POST['wp_audio_player_nonce'] ) && isset( $_POST['post_type'] ) ) {
-
-			// Don't save if the user hasn't submitted the changes
-			if( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
-				return;
-			} // end if
-
-			// Verify that the input is coming from the proper form
-			if( ! wp_verify_nonce( $_POST['wp_audio_player_nonce'], plugin_basename( __FILE__ ) ) ) {
-				return;
-			} // end if
-
-			// Make sure the user has permissions to post
-			if( 'post' == $_POST['post_type'] ) {
-				if( ! current_user_can( 'edit_post', $post_id ) ) {
-					return;
-				} // end if
-			} // end if/else
-
+		// Make sure the user can save the meta data
+		if( $this->user_can_save( $post_id, $this->audio_player_nonce ) ) {
+		
 			// Read the post URL
 			$wp_audio_url = '';
 			if( isset( $_POST['wp_audio_url'] ) ) {
@@ -169,8 +200,8 @@ class WP_Audio_Player {
 
 			// Update it for this post.
 			update_post_meta( $post_id, 'wp_audio_url', $wp_audio_url );
-
-		} // end if
+		
+		} // end if/else
 
 	} // end save_audio_url
 
@@ -188,12 +219,34 @@ class WP_Audio_Player {
 			// Append the audio URL ot the content, if it's defined.
 			$audio_url = get_post_meta( get_the_ID(), 'wp_audio_url', true );
 			if( 0 != strlen( $audio_url ) ) {
-
-				$audio_html = '<audio src="' . esc_url ( $audio_url ) . '" preload="auto" controls class="wp-audio-player"></audio>';
+				
+				// Firefox doesn't support MP3's. Sad story. Give them an option to use the embed.
+				if( $this->user_is_using_firefox() ) {
+				
+					$audio_html = '<div class="wp-audio-player-firefox">';
+						$audio_html .= '<embed src="' . esc_url ( $audio_url ) . '" />';
+						$audio_html .= '<div class="wp-audio-player-notice">' . __( "<strong>Heads up!</strong> This browser doesn't support WP Audio Player, so it's using the basic player.", 'wp-audio-player' ) . '</div>';
+					$audio_html .= '</div>';
+				
+				// Otherwise, we are good to go with the fancy-schmancy player so let's do it!
+				} else {
+				
+					// Actually write out the meta data
+					$audio_html = '<audio preload="auto" controls src="' . esc_url ( $audio_url ) . '" class="wp-audio-player"></audio>';
+					
+					// Add the meta data to the plugin
+					$audio_html .= '<div class="wp-audio-player-meta">';
+						$audio_html .= '<span class="wp-audio-player-length"></span>';
+						$audio_html .= '<span class="wp-audio-player-start"></span>';
+						$audio_html .= '<span class="wp-audio-player-end"></span>';
+					$audio_html .= '</div><!-- /.wp-audio-player-meta -->';
+				
+				} // end if/else
+				
 				$content .= $audio_html;
 
 			} // end if
-
+			
 		} // end if
 
 		return $content;
@@ -221,6 +274,67 @@ class WP_Audio_Player {
 		);
 
 	} // end add_meta_box
+
+	/**
+	 * Determines whether or not the current user has the ability to save meta data associated with this post.
+	 *
+	 * @param		int		$post_id	The ID of the post being save
+	 * @param		bool				Whether or not the user has the ability to save this post.
+	 * @version		1.0
+	 * @since		1.4
+	 */
+	private function user_can_save( $post_id, $nonce ) {
+		
+	    $is_autosave = wp_is_post_autosave( $post_id );
+	    $is_revision = wp_is_post_revision( $post_id );
+	    $is_valid_nonce = ( isset( $_POST[ $nonce ] ) && wp_verify_nonce( $_POST[ $nonce ], plugin_basename( __FILE__ ) ) ) ? true : false;
+	    
+	    // Return true if the user is able to save; otherwise, false.
+	    return ! ( $is_autosave || $is_revision ) && $is_valid_nonce;
+	
+	} // end user_can_save
+	
+	/**
+	 * Determines whether or not the user is using Firefox to view the page
+	 *
+	 * @return		True if the user is using Firefox; false, otherwise.
+	 * @version		1.0
+	 * @since		1.4
+	 */
+	private function user_is_using_firefox() {
+		return false != stristr( $_SERVER['HTTP_USER_AGENT'], 'firefox' );
+	} // end is_firefox
+	
+	/**
+	 * Creates an array of all of the media uploads the user has.
+	 *
+	 * @return		The array of MP3's in the user's media library
+	 * @version		1.0
+	 * @since		1.4
+	 */
+	private function get_mp3_files() {
+		
+		$args = array(
+			'post_type'			=>	'attachment',
+			'post_mime_type'	=>	'audio/mpeg',
+			'post_status'		=>	'inherit'
+		);
+		$media_query = new WP_Query( $args );
+
+		return $media_query;
+		
+	} // end get_mp3_files
+	
+	/**
+	 * Determines if there are any files stored in the database.
+	 *
+	 * @return		True if there are MP3's in the media library; false, otherwise.
+	 * @version		1.0
+	 * @since		1.4
+	 */
+	private function has_mp3_files() {
+		return 0 < $this->get_mp3_files()->found_posts;
+	} // end has_mp3_files
 
 } // end class
 
