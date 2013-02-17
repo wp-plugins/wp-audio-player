@@ -3,7 +3,7 @@
 Plugin Name: WP Audio Player
 Plugin URI: http://tommcfarlin.com/wp-audio-player/
 Description: An easy way to embed an audio file in your posts using the responsive and touch-friendly audio player by Codrops.
-Version: 1.4
+Version: 1.5
 Author: Tom McFarlin
 Author URI: http://tommcfarlin.com/
 Author Email: tom@tommcfarlin.com
@@ -27,7 +27,7 @@ License:
 */
 
 if( ! defined( 'WP_AUDIO_PLAYER_VERSION' ) ) {
-	define( 'WP_AUDIO_PLAYER_VERSION', '1.4' );
+	define( 'WP_AUDIO_PLAYER_VERSION', '1.5' );
 } // end if
 
 class WP_Audio_Player {
@@ -57,7 +57,7 @@ class WP_Audio_Player {
 		add_action( 'wp_enqueue_scripts', array( $this, 'register_plugin_scripts' ) );
 
 		// Setup the metaboxes and the save post functionality
-		add_action( 'add_meta_boxes', array( $this, 'display_audio_url' ) );
+		add_action( 'add_meta_boxes', array( $this, 'display_audio_url' ), 10 );
 		add_action( 'save_post', array( $this, 'save_audio_url' ) );
 
 		// Append the player to the end of the post
@@ -149,28 +149,33 @@ class WP_Audio_Player {
 		
 		// If there has MP3's in the Media Library, give them that option.
 		if( $this->has_mp3_files() ) {
-		
-			// Grab the query for the MP3 files
-			$media = $this->get_mp3_files();
-		
+					
 			$html  .= '<p class="description">';
 				$html .= __( 'Or select an MP3 from your media library.', 'wp-audio-player' );
 			$html .= '</p>';
 			$html .= '<select id="wp-audio-player-media" name="wp-audio-player-media" multiple>';
-				
-				// Build up the list of MP#3 files
-				while( $media->have_posts() ) {
-				
-					$media->the_post();
+			
+				/* Build up the list of MP3 files
+				 * 
+				 * Note that for some reason, using the traditional `while( have_posts() )` in the admin
+				 * was causing problems with post excerpts. Honestly, I'm unsure as to *why*; however, 
+				 * doing a `foreach` and checking the object's type and title property allows this to work
+				 * just as well without interferring with other meta data and post types.
+				 *
+				 * This code is a result of a bug reported here:
+				 * http://wordpress.org/support/topic/blog-excerpts-on-sidebar-are-all-the-same?replies=11#post-3862451
+				 *
+				 * 17 February 2012
+				 */
+				$mp3_query = $this->get_mp3_files();
+				foreach( $mp3_query->posts as $mp3_post ) {
 					
-					global $post;
-					$html .= '<option value="' . $post->guid . '" ' . selected( $post->guid, esc_url( get_post_meta( $post->ID, 'wp_audio_url', true ) ), false ) . '>' . get_the_title() . '</option>';
+					$html .= '<option value="' . $mp3_post->guid . '" ' . selected( $mp3_post->guid, esc_url( get_post_meta( $mp3_post->ID, 'wp_audio_url', true ) ), false ) . '>' . $mp3_post->post_title . '</option>';
 					
-				} // end while
-				wp_reset_postdata();
+				} // end if
 				
 			$html .= '</select><!-- /#wp-audio-player-media -->';
-		
+
 		} // end if 
 
 		echo $html;
@@ -210,6 +215,9 @@ class WP_Audio_Player {
 	 *
 	 * @param   string   $content   The post content to which we're appending the player.
 	 * @return  string              The content with the player at the bottom of the content.
+	 *
+	 * @version	1.1
+	 * @since	1.4
 	 */
 	public function display_audio_content( $content ) {
 
@@ -263,7 +271,7 @@ class WP_Audio_Player {
 	 * @param   string   $post_type   The post type to which we're adding the meta box.
 	 */
 	private function add_meta_box( $post_type ) {
-
+	
 		add_meta_box(
 			'wp_audio_url',
 			__( 'Featured Audio', 'wp-audio-player' ),
@@ -319,9 +327,9 @@ class WP_Audio_Player {
 			'post_mime_type'	=>	'audio/mpeg',
 			'post_status'		=>	'inherit'
 		);
-		$media_query = new WP_Query( $args );
-
-		return $media_query;
+		$mp3_query = new WP_Query( $args );
+		
+		return $mp3_query;
 		
 	} // end get_mp3_files
 	
@@ -329,13 +337,18 @@ class WP_Audio_Player {
 	 * Determines if there are any files stored in the database.
 	 *
 	 * @return		True if there are MP3's in the media library; false, otherwise.
-	 * @version		1.0
+	 * @version		1.1
 	 * @since		1.4
 	 */
 	private function has_mp3_files() {
-		return 0 < $this->get_mp3_files()->found_posts;
+		
+		$mp3_query = $this->get_mp3_files();
+		$mp3_count = $mp3_query->found_posts;
+
+		return 0 < $mp3_count;
+		
 	} // end has_mp3_files
 
 } // end class
 
-new WP_Audio_Player();
+$GLOBALS['wp-audio-player'] = new WP_Audio_Player();

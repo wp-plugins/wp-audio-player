@@ -1,0 +1,4 @@
+.wp-audio-player{width:0px;height:0px;display:block;}
+.wp-audio-player-meta{display:none;}
+.wp-audio-player-firefox embed{height:15px;width:100% !important;margin-bottom:0 !important;}
+.wp-audio-player-firefox .wp-audio-player-notice{font-size:10px;background-color:#fcf8e3;border:1px solid #fbeed5;color:#c09853;padding:8px 35px 8px 14px;}
