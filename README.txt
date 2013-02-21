@@ -46,6 +46,9 @@ In version 1.0, no; however, this is a planned feature assuming that the plugin 
 
 == Changelog ==
 
+= 1.6 =
+* Making sure the audio player doesn't display to the public on password protected posts
+
 = 1.5 =
 * Improving the way the plugin is started so that it can be programmatically unset
 * Fixing a problem with excerpts not properly being displayed in some plugins
