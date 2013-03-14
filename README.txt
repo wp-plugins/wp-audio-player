@@ -3,7 +3,7 @@ Contributors: tommcfarlin
 Tags: mp3, audio, player
 Requires at least: 3.5
 Tested up to: 3.5.1
-Stable tag: 1.6
+Stable tag: 1.7
 
 WP Audio Player is a plugin based on the popular player from the guys at Codrops that aims to make it easy to include an audio player in your post.
 
@@ -45,6 +45,9 @@ In version 1.0, no; however, this is a planned feature assuming that the plugin 
 4. A screenshot of the updated dashboard for how you can retrieve MP3's from your media library.
 
 == Changelog ==
+
+= 1.7 =
+* Resolving a bug that prevented the player from displaying on single pages (not just single posts)
 
 = 1.6 =
 * Making sure the audio player doesn't display to the public on password protected posts

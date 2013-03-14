@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: WP Audio Player 1.0\n"
-"POT-Creation-Date: 2013-02-17 14:23-0500\n"
-"PO-Revision-Date: 2013-02-17 14:23-0500\n"
+"POT-Creation-Date: 2013-03-14 16:32-0500\n"
+"PO-Revision-Date: 2013-03-14 16:32-0500\n"
 "Last-Translator: Tom McFarlin <tom@tommcfarlin.com>\n"
 "Language-Team: Tom McFarlin <tom@tommcfarlin.com>\n"
 "Language: en_US\n"
@@ -23,12 +23,12 @@ msgstr ""
 msgid "Or select an MP3 from your media library."
 msgstr ""
 
-#: ../plugin.php:236
+#: ../plugin.php:237
 msgid ""
 "<strong>Heads up!</strong> This browser doesn't support WP Audio Player, so "
 "it's using the basic player."
 msgstr ""
 
-#: ../plugin.php:277
+#: ../plugin.php:278
 msgid "Featured Audio"
 msgstr ""
