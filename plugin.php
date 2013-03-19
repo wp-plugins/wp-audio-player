@@ -3,7 +3,7 @@
 Plugin Name: WP Audio Player
 Plugin URI: http://tommcfarlin.com/wp-audio-player/
 Description: An easy way to embed an audio file in your posts using the responsive and touch-friendly audio player by Codrops.
-Version: 1.7
+Version: 1.8
 Author: Tom McFarlin
 Author URI: http://tommcfarlin.com/
 Author Email: tom@tommcfarlin.com
@@ -27,7 +27,7 @@ License:
 */
 
 if( ! defined( 'WP_AUDIO_PLAYER_VERSION' ) ) {
-	define( 'WP_AUDIO_PLAYER_VERSION', '1.7' );
+	define( 'WP_AUDIO_PLAYER_VERSION', '1.8' );
 } // end if
 
 class WP_Audio_Player {
@@ -144,9 +144,9 @@ class WP_Audio_Player {
 
 		$html  = '<p class="description">';
 			$html .= __( 'Place the URL to your audio file here.', 'wp-audio-player' );
-		$html .= '</p>';
+		$html .= '</p>';	
 		$html .= '<input type="text" id="wp_audio_url" name="wp_audio_url" value="' . esc_url( get_post_meta( $post->ID, 'wp_audio_url', true ) ) . '" />';
-		
+	
 		// If there has MP3's in the Media Library, give them that option.
 		if( $this->has_mp3_files() ) {
 					
@@ -177,6 +177,11 @@ class WP_Audio_Player {
 			$html .= '</select><!-- /#wp-audio-player-media -->';
 
 		} // end if 
+		
+		// Firefox notice
+		$html .= '<div id="wp-audio-player-notice">';
+			$html .= __( "<strong>Heads up!</strong> This browser doesn't support WP Audio Player, so it will be using the basic player.", 'wp-audio-player' );
+		$html .= '</div>';
 
 		echo $html;
 
@@ -234,7 +239,6 @@ class WP_Audio_Player {
 				
 					$audio_html = '<div class="wp-audio-player-firefox">';
 						$audio_html .= '<embed src="' . esc_url ( $audio_url ) . '" />';
-						$audio_html .= '<div class="wp-audio-player-notice">' . __( "<strong>Heads up!</strong> This browser doesn't support WP Audio Player, so it's using the basic player.", 'wp-audio-player' ) . '</div>';
 					$audio_html .= '</div>';
 				
 				// Otherwise, we are good to go with the fancy-schmancy player so let's do it!
