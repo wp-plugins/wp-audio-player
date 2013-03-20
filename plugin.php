@@ -3,7 +3,7 @@
 Plugin Name: WP Audio Player
 Plugin URI: http://tommcfarlin.com/wp-audio-player/
 Description: An easy way to embed an audio file in your posts using the responsive and touch-friendly audio player by Codrops.
-Version: 1.8
+Version: 1.9
 Author: Tom McFarlin
 Author URI: http://tommcfarlin.com/
 Author Email: tom@tommcfarlin.com
@@ -26,8 +26,10 @@ License:
 
 */
 
+include_once( 'lib/Mobile_Detect.class.php' );
+
 if( ! defined( 'WP_AUDIO_PLAYER_VERSION' ) ) {
-	define( 'WP_AUDIO_PLAYER_VERSION', '1.8' );
+	define( 'WP_AUDIO_PLAYER_VERSION', '1.9' );
 } // end if
 
 class WP_Audio_Player {
@@ -36,7 +38,9 @@ class WP_Audio_Player {
 	 * Attributes
 	 *--------------------------------------------*/
 
-	 private $audio_player_nonce = 'wp_audio_player_nonce';
+	private $audio_player_nonce = 'wp_audio_player_nonce';
+	
+	private $detect;
 
 	/*--------------------------------------------*
 	 * Constructor
@@ -47,8 +51,13 @@ class WP_Audio_Player {
 	 */
 	public function __construct() {
 
+		$this->detect = new Mobile_Detect();
+
 		// Load plugin text domain
 		add_action( 'init', array( $this, 'plugin_textdomain' ) );
+
+		// Add the HTML5 Shiv 
+		add_action( 'wp_enqueue_scripts', array( $this, 'include_html5_shiv' ) );
 
 		// Register site styles and scripts
 		add_action( 'admin_enqueue_scripts', array( $this, 'register_admin_scripts' ) );
@@ -62,6 +71,14 @@ class WP_Audio_Player {
 
 		// Append the player to the end of the post
 		add_filter( 'the_content', array( $this, 'display_audio_content' ) );
+		
+		// add ie conditional html5 shim to header
+function add_ie_html5_shim () {
+    echo '<!--[if lt IE 9]>';
+    echo '<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>';
+    echo '<![endif]-->';
+}
+add_action('wp_head', 'add_ie_html5_shim');
 
 	} // end constructor
 
@@ -105,6 +122,12 @@ class WP_Audio_Player {
 		wp_enqueue_script( 'wp-audio-player-plugin', plugins_url( 'wp-audio-player/js/plugin.min.js' ), array( 'wp-audio-player' ), WP_AUDIO_PLAYER_VERSION, false );
 		
 	} // end register_plugin_scripts
+	
+	public function include_html5_shiv() {
+		if( $this->user_is_using_ie8() ) {
+			wp_enqueue_script( 'wp-audio-player-html5shiv', plugins_url( 'wp-audio-player/js/html5shiv.min.js' ), null, WP_AUDIO_PLAYER_VERSION, false );	
+		} // end if
+	} // end include_html5_shiv
 
 	/*--------------------------------------------*
 	 * Core Functions
@@ -226,7 +249,6 @@ class WP_Audio_Player {
 	 */
 	public function display_audio_content( $content ) {
 
-
 		// We really only want to do this if we're on the single post page
 		if( ( is_single() || is_page() ) && ! post_password_required() ) {
 
@@ -235,15 +257,22 @@ class WP_Audio_Player {
 			if( 0 != strlen( $audio_url ) ) {
 				
 				// Firefox doesn't support MP3's. Sad story. Give them an option to use the embed.
-				if( $this->user_is_using_firefox() ) {
+				if( $this->detect->isMobile() || $this->user_is_using_firefox() ) {
 				
 					$audio_html = '<div class="wp-audio-player-firefox">';
-						$audio_html .= '<embed src="' . esc_url ( $audio_url ) . '" />';
+						$audio_html .= '<embed src="' . esc_url ( $audio_url ) . '" autostart="false" />';
 					$audio_html .= '</div>';
-				
+					
+				// If they're use IE8, we need to use a completely different version of the audio embed element
+				} else if ( $this->user_is_using_ie8() ) {
+									
+					$audio_html = '<div class="wp-audio-player-ie8">';
+						$audio_html .= '<embed src="' . esc_url ( $audio_url ) . '" autostart="false" />';
+					$audio_html .= '</div><!-- /.wp-audio-player-ie8 -->';
+									
 				// Otherwise, we are good to go with the fancy-schmancy player so let's do it!
 				} else {
-				
+								
 					// Actually write out the meta data
 					$audio_html = '<audio preload="auto" controls src="' . esc_url ( $audio_url ) . '" class="wp-audio-player"></audio>';
 					
@@ -316,7 +345,18 @@ class WP_Audio_Player {
 	 */
 	private function user_is_using_firefox() {
 		return false != stristr( $_SERVER['HTTP_USER_AGENT'], 'firefox' );
-	} // end is_firefox
+	} // end user_is_using_firefox
+	
+	/**
+	 * Determines whether or not the user is using IE8 to view the page
+	 *
+	 * @return		True if the user is using Firefox; false, otherwise.
+	 * @version		1.0
+	 * @since		1.9
+	 */
+	private function user_is_using_ie8() {
+		return false != stristr( $_SERVER['HTTP_USER_AGENT'], 'MSIE 8.0' );
+	} // user_is_using_ie8
 	
 	/**
 	 * Creates an array of all of the media uploads the user has.

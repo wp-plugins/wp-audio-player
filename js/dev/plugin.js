@@ -1,10 +1,11 @@
 (function($) {
 	"use strict";
+
 	$(function() {
 	
 		// Go ahead and hide the player while we wait for it to load
 		$('audio').hide();
-	
+
 		// Now actually setup the information necessary to work with the styled Audio Player
 		$('audio').bind( 'loadeddata', function() {
 			
@@ -17,5 +18,7 @@
 			$('audio').audioPlayer();
 			
 		});
+
 	});
+	
 }(jQuery));
