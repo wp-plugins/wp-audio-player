@@ -3,7 +3,7 @@
 Plugin Name: WP Audio Player
 Plugin URI: http://tommcfarlin.com/wp-audio-player/
 Description: An easy way to embed an audio file in your posts using the responsive and touch-friendly audio player by Codrops.
-Version: 1.9
+Version: 1.9.1
 Author: Tom McFarlin
 Author URI: http://tommcfarlin.com/
 Author Email: tom@tommcfarlin.com
@@ -26,10 +26,12 @@ License:
 
 */
 
-include_once( 'lib/Mobile_Detect.class.php' );
+if( ! class_exists( 'Mobile_Detect' ) ) {
+	include_once( 'lib/Mobile_Detect.class.php' );
+} // end if
 
 if( ! defined( 'WP_AUDIO_PLAYER_VERSION' ) ) {
-	define( 'WP_AUDIO_PLAYER_VERSION', '1.9' );
+	define( 'WP_AUDIO_PLAYER_VERSION', '1.9.1' );
 } // end if
 
 class WP_Audio_Player {
@@ -39,7 +41,7 @@ class WP_Audio_Player {
 	 *--------------------------------------------*/
 
 	private $audio_player_nonce = 'wp_audio_player_nonce';
-	
+
 	private $detect;
 
 	/*--------------------------------------------*
@@ -56,7 +58,7 @@ class WP_Audio_Player {
 		// Load plugin text domain
 		add_action( 'init', array( $this, 'plugin_textdomain' ) );
 
-		// Add the HTML5 Shiv 
+		// Add the HTML5 Shiv
 		add_action( 'wp_enqueue_scripts', array( $this, 'include_html5_shiv' ) );
 
 		// Register site styles and scripts
@@ -71,7 +73,7 @@ class WP_Audio_Player {
 
 		// Append the player to the end of the post
 		add_filter( 'the_content', array( $this, 'display_audio_content' ) );
-		
+
 		// add ie conditional html5 shim to header
 function add_ie_html5_shim () {
     echo '<!--[if lt IE 9]>';
@@ -93,12 +95,12 @@ add_action('wp_head', 'add_ie_html5_shim');
 	 * Registers and enqueues plugin-specific styles.
 	 */
 	public function register_plugin_styles() {
-		
+
 		wp_enqueue_style( 'wp-audio-player', plugins_url( 'wp-audio-player/css/audioplayer.css' ) );
 		wp_enqueue_style( 'wp-audio-player-theme', plugins_url( 'wp-audio-player/css/plugin.css' ) );
-		
+
 	} // end register_plugin_styles
-	
+
 	/**
 	 * Registers and enqueues admin-specific scripts.
 	 */
@@ -117,15 +119,15 @@ add_action('wp_head', 'add_ie_html5_shim');
 	 * Registers and enqueues plugin-specific scripts.
 	 */
 	public function register_plugin_scripts() {
-	
+
 		wp_enqueue_script( 'wp-audio-player', plugins_url( 'wp-audio-player/js/audioplayer.min.js' ), array( 'jquery' ), WP_AUDIO_PLAYER_VERSION, false );
 		wp_enqueue_script( 'wp-audio-player-plugin', plugins_url( 'wp-audio-player/js/plugin.min.js' ), array( 'wp-audio-player' ), WP_AUDIO_PLAYER_VERSION, false );
-		
+
 	} // end register_plugin_scripts
-	
+
 	public function include_html5_shiv() {
 		if( $this->user_is_using_ie8() ) {
-			wp_enqueue_script( 'wp-audio-player-html5shiv', plugins_url( 'wp-audio-player/js/html5shiv.min.js' ), null, WP_AUDIO_PLAYER_VERSION, false );	
+			wp_enqueue_script( 'wp-audio-player-html5shiv', plugins_url( 'wp-audio-player/js/html5shiv.min.js' ), null, WP_AUDIO_PLAYER_VERSION, false );
 		} // end if
 	} // end include_html5_shiv
 
@@ -167,21 +169,21 @@ add_action('wp_head', 'add_ie_html5_shim');
 
 		$html  = '<p class="description">';
 			$html .= __( 'Place the URL to your audio file here.', 'wp-audio-player' );
-		$html .= '</p>';	
+		$html .= '</p>';
 		$html .= '<input type="text" id="wp_audio_url" name="wp_audio_url" value="' . esc_url( get_post_meta( $post->ID, 'wp_audio_url', true ) ) . '" />';
-	
+
 		// If there has MP3's in the Media Library, give them that option.
 		if( $this->has_mp3_files() ) {
-					
+
 			$html  .= '<p class="description">';
 				$html .= __( 'Or select an MP3 from your media library.', 'wp-audio-player' );
 			$html .= '</p>';
 			$html .= '<select id="wp-audio-player-media" name="wp-audio-player-media" multiple>';
-			
+
 				/* Build up the list of MP3 files
-				 * 
+				 *
 				 * Note that for some reason, using the traditional `while( have_posts() )` in the admin
-				 * was causing problems with post excerpts. Honestly, I'm unsure as to *why*; however, 
+				 * was causing problems with post excerpts. Honestly, I'm unsure as to *why*; however,
 				 * doing a `foreach` and checking the object's type and title property allows this to work
 				 * just as well without interferring with other meta data and post types.
 				 *
@@ -192,15 +194,15 @@ add_action('wp_head', 'add_ie_html5_shim');
 				 */
 				$mp3_query = $this->get_mp3_files();
 				foreach( $mp3_query->posts as $mp3_post ) {
-					
+
 					$html .= '<option value="' . $mp3_post->guid . '" ' . selected( $mp3_post->guid, esc_url( get_post_meta( $mp3_post->ID, 'wp_audio_url', true ) ), false ) . '>' . $mp3_post->post_title . '</option>';
-					
+
 				} // end if
-				
+
 			$html .= '</select><!-- /#wp-audio-player-media -->';
 
-		} // end if 
-		
+		} // end if
+
 		// Firefox notice
 		$html .= '<div id="wp-audio-player-notice">';
 			$html .= __( "<strong>Heads up!</strong> This browser doesn't support WP Audio Player, so it will be using the basic player.", 'wp-audio-player' );
@@ -219,7 +221,7 @@ add_action('wp_head', 'add_ie_html5_shim');
 
 		// Make sure the user can save the meta data
 		if( $this->user_can_save( $post_id, $this->audio_player_nonce ) ) {
-		
+
 			// Read the post URL
 			$wp_audio_url = '';
 			if( isset( $_POST['wp_audio_url'] ) ) {
@@ -233,7 +235,7 @@ add_action('wp_head', 'add_ie_html5_shim');
 
 			// Update it for this post.
 			update_post_meta( $post_id, 'wp_audio_url', $wp_audio_url );
-		
+
 		} // end if/else
 
 	} // end save_audio_url
@@ -255,40 +257,40 @@ add_action('wp_head', 'add_ie_html5_shim');
 			// Append the audio URL ot the content, if it's defined.
 			$audio_url = get_post_meta( get_the_ID(), 'wp_audio_url', true );
 			if( 0 != strlen( $audio_url ) ) {
-				
+
 				// Firefox doesn't support MP3's. Sad story. Give them an option to use the embed.
 				if( $this->detect->isMobile() || $this->user_is_using_firefox() ) {
-				
+
 					$audio_html = '<div class="wp-audio-player-firefox">';
 						$audio_html .= '<embed src="' . esc_url ( $audio_url ) . '" autostart="false" />';
 					$audio_html .= '</div>';
-					
+
 				// If they're use IE8, we need to use a completely different version of the audio embed element
 				} else if ( $this->user_is_using_ie8() ) {
-									
+
 					$audio_html = '<div class="wp-audio-player-ie8">';
 						$audio_html .= '<embed src="' . esc_url ( $audio_url ) . '" autostart="false" />';
 					$audio_html .= '</div><!-- /.wp-audio-player-ie8 -->';
-									
+
 				// Otherwise, we are good to go with the fancy-schmancy player so let's do it!
 				} else {
-								
+
 					// Actually write out the meta data
 					$audio_html = '<audio preload="auto" controls src="' . esc_url ( $audio_url ) . '" class="wp-audio-player"></audio>';
-					
+
 					// Add the meta data to the plugin
 					$audio_html .= '<div class="wp-audio-player-meta">';
 						$audio_html .= '<span class="wp-audio-player-length"></span>';
 						$audio_html .= '<span class="wp-audio-player-start"></span>';
 						$audio_html .= '<span class="wp-audio-player-end"></span>';
 					$audio_html .= '</div><!-- /.wp-audio-player-meta -->';
-				
+
 				} // end if/else
-				
+
 				$content .= $audio_html;
 
 			} // end if
-			
+
 		} // end if
 
 		return $content;
@@ -305,7 +307,7 @@ add_action('wp_head', 'add_ie_html5_shim');
 	 * @param   string   $post_type   The post type to which we're adding the meta box.
 	 */
 	private function add_meta_box( $post_type ) {
-	
+
 		add_meta_box(
 			'wp_audio_url',
 			__( 'Featured Audio', 'wp-audio-player' ),
@@ -326,16 +328,16 @@ add_action('wp_head', 'add_ie_html5_shim');
 	 * @since		1.4
 	 */
 	private function user_can_save( $post_id, $nonce ) {
-		
+
 	    $is_autosave = wp_is_post_autosave( $post_id );
 	    $is_revision = wp_is_post_revision( $post_id );
 	    $is_valid_nonce = ( isset( $_POST[ $nonce ] ) && wp_verify_nonce( $_POST[ $nonce ], plugin_basename( __FILE__ ) ) ) ? true : false;
-	    
+
 	    // Return true if the user is able to save; otherwise, false.
 	    return ! ( $is_autosave || $is_revision ) && $is_valid_nonce;
-	
+
 	} // end user_can_save
-	
+
 	/**
 	 * Determines whether or not the user is using Firefox to view the page
 	 *
@@ -346,7 +348,7 @@ add_action('wp_head', 'add_ie_html5_shim');
 	private function user_is_using_firefox() {
 		return false != stristr( $_SERVER['HTTP_USER_AGENT'], 'firefox' );
 	} // end user_is_using_firefox
-	
+
 	/**
 	 * Determines whether or not the user is using IE8 to view the page
 	 *
@@ -357,7 +359,7 @@ add_action('wp_head', 'add_ie_html5_shim');
 	private function user_is_using_ie8() {
 		return false != stristr( $_SERVER['HTTP_USER_AGENT'], 'MSIE 8.0' );
 	} // user_is_using_ie8
-	
+
 	/**
 	 * Creates an array of all of the media uploads the user has.
 	 *
@@ -366,18 +368,18 @@ add_action('wp_head', 'add_ie_html5_shim');
 	 * @since		1.4
 	 */
 	private function get_mp3_files() {
-		
+
 		$args = array(
 			'post_type'			=>	'attachment',
 			'post_mime_type'	=>	'audio/mpeg',
 			'post_status'		=>	'inherit'
 		);
 		$mp3_query = new WP_Query( $args );
-		
+
 		return $mp3_query;
-		
+
 	} // end get_mp3_files
-	
+
 	/**
 	 * Determines if there are any files stored in the database.
 	 *
@@ -386,12 +388,12 @@ add_action('wp_head', 'add_ie_html5_shim');
 	 * @since		1.4
 	 */
 	private function has_mp3_files() {
-		
+
 		$mp3_query = $this->get_mp3_files();
 		$mp3_count = $mp3_query->found_posts;
 
 		return 0 < $mp3_count;
-		
+
 	} // end has_mp3_files
 
 } // end class
